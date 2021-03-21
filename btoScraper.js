@@ -5,8 +5,13 @@ const blocks = ['222A', '222B', '223A', '223B', '223C', '224A', '224B', '224C', 
 module.exports.scrape = async () => {
   console.log('hi');
   const pageUrl = `https://services2.hdb.gov.sg/webapp/BP13AWFlatAvail/BP13EBSFlatSearch?Town=Toa+Payoh&Flat_Type=BTO&selectedTown=Toa+Payoh&Flat=4-Room&ethnic=Y&ViewOption=A&projName=A&Block=0&DesType=A&EthnicA=Y&EthnicM=&EthnicC=&EthnicO=&numSPR=&dteBallot=202011&Neighbourhood=&Contract=&BonusFlats1=N&searchDetails=Y&brochure=true`;
-  const browser = await puppeteer.launch();
+  // const browser = await puppeteer.launch();
 
+  const browser = await puppeteer.launch({
+    executablePath: '/usr/bin/chromium-browser',
+    headless: true,
+    args: ['--no-sandbox']
+  })
   const page = await browser.newPage();
   await page.goto(pageUrl);
 
