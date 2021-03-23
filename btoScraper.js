@@ -1,5 +1,8 @@
 require('dotenv').config();
 const puppeteer = require('puppeteer');
+const fsPromises = require('fs').promises;
+
+const db = require('./db.json');
 
 const blocks = [
   '222A',
@@ -16,18 +19,16 @@ const blocks = [
 ];
 
 module.exports.scrape = async () => {
-  console.log('hi');
   const pageUrl = `https://services2.hdb.gov.sg/webapp/BP13AWFlatAvail/BP13EBSFlatSearch?Town=Toa+Payoh&Flat_Type=BTO&selectedTown=Toa+Payoh&Flat=4-Room&ethnic=Y&ViewOption=A&projName=A&Block=0&DesType=A&EthnicA=Y&EthnicM=&EthnicC=&EthnicO=&numSPR=&dteBallot=202011&Neighbourhood=&Contract=&BonusFlats1=N&searchDetails=Y&brochure=true`;
-  // const browser = await puppeteer.launch();
 
   const puppeteerConfig =
     process.env.NODE_ENV === 'development'
       ? {}
       : {
-          executablePath: '/usr/bin/chromium-browser',
-          headless: true,
-          args: ['--no-sandbox'],
-        };
+        executablePath: '/usr/bin/chromium-browser',
+        headless: true,
+        args: ['--no-sandbox'],
+      };
 
   const browser = await puppeteer.launch(puppeteerConfig);
   const page = await browser.newPage();
@@ -39,17 +40,17 @@ module.exports.scrape = async () => {
     await getAvailableUnits(page, availableUnits, i, true);
   }
 
-  for (let i = 6; i < blocks.length; i++) {
-    if (i === 9) continue;
-    await getAvailableUnits(page, availableUnits, i, false);
-  }
+  await getAvailableUnits(page, availableUnits, 6, false);
 
   await browser.close();
 
   const numOfHighUnits = calcHighUnits(availableUnits);
-  const message =
-    'Number of high units (6 and above) remaining: ' + numOfHighUnits;
-  return message;
+  db.highUnitsLeft = numOfHighUnits;
+  db.highUnitsLeftUpdatedAt = Date.now();
+
+  await fsPromises.writeFile("./db.json", JSON.stringify(db));
+
+  return numOfHighUnits;
 };
 
 const calcHighUnits = (availableUnits) => {
@@ -75,14 +76,12 @@ const getAvailableUnits = async (
   try {
     if (firstRow) {
       await page.click(
-        `#blockDetails > div:nth-child(1) > table > tbody > tr:nth-child(1) > td:nth-child(${
-          blockIndex + 1
+        `#blockDetails > div:nth-child(1) > table > tbody > tr:nth-child(1) > td:nth-child(${blockIndex + 1
         }) > div`,
       );
     } else {
       await page.click(
-        `#blockDetails > div:nth-child(1) > table > tbody > tr:nth-child(2) > td:nth-child(${
-          blockIndex - 5
+        `#blockDetails > div:nth-child(1) > table > tbody > tr:nth-child(2) > td:nth-child(${blockIndex - 5
         }) > div`,
       );
     }
